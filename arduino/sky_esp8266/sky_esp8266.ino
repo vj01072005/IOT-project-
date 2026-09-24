@@ -52,15 +52,9 @@ const char* password = "shoaib845";
 /**
  * SERVER ENDPOINT URL:
  * --------------------
- * OPTION A (Local Testing on same WiFi):
- * Replace with your PC's local IP address (find using 'ipconfig' in cmd):
- * Example: "http://192.168.1.100:3000/api/device/data"
- * 
- * OPTION B (Render Cloud Deployment):
- * Replace with your deployed Render URL:
- * Example: "https://sky-iot-app.onrender.com/api/device/data"
+ * Live Render Cloud Endpoint:
  */
-String serverUrl = "http://192.168.1.100:3000/api/device/data";
+String serverUrl = "https://iot-project-mur6.onrender.com/api/device/data";
 
 // Telemetry interval: 10,000 milliseconds (10 seconds)
 const unsigned long SEND_INTERVAL = 10000;
@@ -242,6 +236,7 @@ void loop() {
     }
 
     if (beginSuccess) {
+      http.setTimeout(15000); // 15s timeout for Render cloud responses
       http.addHeader("Content-Type", "application/json");
 
       Serial.print("[HTTP] Sending POST to: ");

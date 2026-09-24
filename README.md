@@ -142,12 +142,10 @@ This repository includes `render.yaml` and is pre-configured for instant zero-co
    const char* ssid     = "COE YAVATMAL";
    const char* password = "shoaib845";
    ```
-6. Set the `serverUrl`:
-   - For **Local Testing** on same WiFi:  
-     `String serverUrl = "http://<YOUR_PC_LOCAL_IP>:3000/api/device/data";`  
-     *(Find your PC IP using `ipconfig` in Command Prompt)*
-   - For **Render Cloud**:  
-     `String serverUrl = "https://<YOUR_RENDER_APP_NAME>.onrender.com/api/device/data";`
+6. Set the `serverUrl` (Pre-configured to your live Render endpoint):
+   ```cpp
+   String serverUrl = "https://iot-project-mur6.onrender.com/api/device/data";
+   ```
 7. Select Board: `NodeMCU 1.0 (ESP-12E Module)` and select your USB COM port.
 8. Click **Upload** (Arrow icon).
 9. Open the Serial Monitor at **115200 baud** to view real-time connection status and telemetry logs!
