@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>sky - IoT Environment Monitoring & Automation</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Chart.js CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Custom Styling -->
+  <link rel="stylesheet" href="/css/style.css">
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#ecfdf5',
+              100: '#d1fae5',
+              200: '#a7f3d0',
+              300: '#6ee7b7',
+              400: '#34d399',
+              500: '#10b981',
+              600: '#059669',
+              700: '#047857',
+              800: '#065f46',
+              900: '#064e3b',
+              950: '#022c22',
+            },
+            dark: {
+              bg: '#070d0a',
+              card: '#0e1713',
+              surface: '#14221b',
+              border: '#1c3427',
+            }
+          }
+        }
+      }
+    }
+  </script>
+</head>
+<body class="bg-[#070d0a] text-slate-100 min-h-screen flex flex-col justify-between selection:bg-brand-500 selection:text-black">
+
+  <!-- Ambient Light Accents -->
+  <div class="fixed inset-0 overflow-hidden pointer-events-none -z-10">
+    <div class="absolute -top-32 left-1/4 w-[500px] h-[500px] bg-brand-600/10 rounded-full blur-[120px]"></div>
+    <div class="absolute top-1/2 right-10 w-[400px] h-[400px] bg-emerald-500/5 rounded-full blur-[100px]"></div>
+  </div>
+
+  <!-- NAVIGATION BAR -->
+  <header class="sticky top-0 z-40 border-b border-[#1c3427] bg-[#0e1713]/90 backdrop-blur-md px-4 sm:px-8 py-3.5 transition-all">
+    <div class="max-w-7xl mx-auto flex items-center justify-between">
+      
+      <!-- Logo & System Status -->
+      <div class="flex items-center space-x-4">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-brand-600 to-brand-400 flex items-center justify-center shadow-lg shadow-brand-500/25">
+          <i data-lucide="cloud-lightning" class="w-6 h-6 text-black"></i>
+        </div>
+        <div>
+          <div class="flex items-center space-x-2">
+            <span class="text-2xl font-black tracking-wider text-white">sky</span>
+            <span class="text-[10px] uppercase font-bold tracking-widest px-2 py-0.5 rounded bg-brand-950 text-brand-400 border border-brand-800">
+              v1.0 IoT
+            </span>
+          </div>
+          <div class="flex items-center space-x-2 text-xs text-slate-400 mt-0.5">
+            <span id="hardware-status-dot" class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span id="hardware-status-text">ESP8266: Polling every 10s</span>
+            <span class="text-slate-600">•</span>
+            <span class="text-brand-400 font-mono text-[11px]">UTC+5:30 Asia/Kolkata</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Action Items: Quick Simulation, User, Logout -->
+      <div class="flex items-center space-x-3">
+        <!-- Quick Simulate Button -->
+        <button 
+          onclick="simulateReading()" 
+          title="Add simulated DHT11 reading for testing"
+          class="hidden sm:inline-flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-[#14221b] border border-[#1c3427] hover:border-brand-500 text-xs font-medium text-slate-300 hover:text-white transition"
+        >
+          <i data-lucide="sparkles" class="w-3.5 h-3.5 text-brand-400"></i>
+          <span>Simulate Telemetry</span>
+        </button>
+
+        <!-- User Info / Auth Badge -->
+        <div id="auth-section" class="flex items-center space-x-2">
+          <div id="user-info" class="hidden sm:flex items-center space-x-2 px-3 py-1.5 bg-[#14221b] rounded-lg border border-[#1c3427]">
+            <i data-lucide="user-check" class="w-4 h-4 text-brand-400"></i>
+            <span id="user-name" class="text-xs font-semibold text-slate-200">Admin</span>
+          </div>
+          <button 
+            id="btn-logout" 
+            onclick="handleLogout()" 
+            title="Sign Out"
+            class="p-2 rounded-lg bg-[#14221b] border border-[#1c3427] hover:border-red-500/50 hover:bg-red-950/30 text-slate-400 hover:text-red-400 transition"
+          >
+            <i data-lucide="log-out" class="w-4 h-4"></i>
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </header>
+
+  <!-- MAIN DASHBOARD CONTENT -->
+  <main class="flex-grow max-w-7xl mx-auto w-full px-4 sm:px-8 py-6">
+    
+    <!-- NAVIGATION TABS -->
+    <div class="flex flex-wrap items-center gap-2 mb-8 bg-[#0e1713] p-1.5 rounded-2xl border border-[#1c3427]">
+      <button 
+        onclick="switchTab('tab-environment')" 
+        id="tab-btn-environment" 
+        class="tab-btn active flex-1 sm:flex-none flex items-center justify-center space-x-2 px-5 py-3 rounded-xl text-sm font-bold border border-transparent transition duration-200"
+      >
+        <i data-lucide="thermometer-snowflake" class="w-4 h-4 text-brand-400"></i>
+        <span>1. Environment Monitoring</span>
+      </button>
+
+      <button 
+        onclick="switchTab('tab-lcd')" 
+        id="tab-btn-lcd" 
+        class="tab-btn flex-1 sm:flex-none flex items-center justify-center space-x-2 px-5 py-3 rounded-xl text-sm font-semibold text-slate-400 hover:text-white border border-transparent transition duration-200"
+      >
+        <i data-lucide="tv" class="w-4 h-4 text-brand-400"></i>
+        <span>2. Smart LCD</span>
+      </button>
+
+      <button 
+        onclick="switchTab('tab-led')" 
+        id="tab-btn-led" 
+        class="tab-btn flex-1 sm:flex-none flex items-center justify-center space-x-2 px-5 py-3 rounded-xl text-sm font-semibold text-slate-400 hover:text-white border border-transparent transition duration-200"
+      >
+        <i data-lucide="power" class="w-4 h-4 text-brand-400"></i>
+        <span>3. LED Automation</span>
+      </button>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- TAB 1: ENVIRONMENT MONITORING              -->
+    <!-- ========================================== -->
+    <div id="tab-environment" class="space-y-8">
+      
+      <!-- Section 1 Header & Quick Controls -->
+      <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div>
+          <h2 class="text-xl sm:text-2xl font-black text-white tracking-tight flex items-center gap-2">
+            <span>DHT11 Sensor Telemetry</span>
+            <span class="text-xs font-semibold px-2 py-0.5 rounded-md bg-brand-950 text-brand-400 border border-brand-800">10s Auto-Update</span>
+          </h2>
+          <p class="text-slate-400 text-xs sm:text-sm mt-0.5">Real-time ambient temperature and humidity with gauge & seek bar indicators</p>
+        </div>
+
+        <div class="flex items-center space-x-3 text-xs">
+          <div class="flex items-center space-x-1.5 px-3 py-1.5 bg-[#0e1713] rounded-lg border border-[#1c3427] text-slate-400">
+            <i data-lucide="clock" class="w-3.5 h-3.5 text-brand-400"></i>
+            <span>Last reading: </span>
+            <span id="last-update-time" class="text-white font-mono font-medium">Just now</span>
+          </div>
+          <button 
+            onclick="loadEnvironmentData()" 
+            title="Refresh Immediately"
+            class="p-2 rounded-lg bg-[#0e1713] border border-[#1c3427] hover:border-brand-500 text-slate-300 hover:text-white transition"
+          >
+            <i data-lucide="refresh-cw" id="refresh-icon" class="w-4 h-4"></i>
+          </button>
+        </div>
+      </div>
+
+      <!-- SECTION 1: INNOVATIVE GAUGE & SEEK BAR STRUCTURE -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        
+        <!-- TEMPERATURE GAUGE & SEEK BAR CARD -->
+        <div class="glass-panel rounded-2xl p-6 relative overflow-hidden flex flex-col justify-between">
+          <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center space-x-3">
+              <div class="w-9 h-9 rounded-lg bg-orange-950/60 border border-orange-500/30 flex items-center justify-center text-orange-400">
+                <i data-lucide="thermometer" class="w-5 h-5"></i>
+              </div>
+              <div>
+                <h3 class="font-bold text-white text-base">Temperature</h3>
+                <span class="text-xs text-slate-400">DHT11 Sensor (Pin D3)</span>
+              </div>
+            </div>
+            <span id="temp-comfort-badge" class="px-2.5 py-1 rounded-full text-xs font-semibold bg-brand-950 text-brand-400 border border-brand-800">
+              Optimal
+            </span>
+          </div>
+
+          <!-- Gauge Circular Visualizer -->
+          <div class="flex flex-col items-center justify-center my-3 relative">
+            <svg class="w-48 h-48 gauge-svg" viewBox="0 0 120 120">
+              <!-- Background Ring (240 degree arc) -->
+              <circle 
+                class="gauge-circle-bg" 
+                cx="60" cy="60" r="50" 
+                stroke-width="10" 
+                stroke-dasharray="235.6 314.15" 
+                stroke-dashoffset="-39.27"
+              />
+              <!-- Progress Ring -->
+              <circle 
+                id="temp-gauge-circle" 
+                class="gauge-circle-progress" 
+                cx="60" cy="60" r="50" 
+                stroke="#10b981" 
+                stroke-width="10" 
+                stroke-dasharray="235.6 314.15" 
+                stroke-dashoffset="180"
+              />
+            </svg>
+
+            <!-- Digital Readout Center -->
+            <div class="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none mt-2">
+              <span id="temp-display-val" class="text-4xl sm:text-5xl font-black text-white font-mono tracking-tight">--.-</span>
+              <span class="text-sm font-semibold text-slate-400 mt-1">°C Celsius</span>
+            </div>
+          </div>
+
+          <!-- INNOVATIVE SEEK BAR STRUCTURE -->
+          <div class="mt-4 pt-4 border-t border-[#1c3427] space-y-2">
+            <div class="flex items-center justify-between text-xs text-slate-400">
+              <span class="flex items-center gap-1"><i data-lucide="sliders" class="w-3.5 h-3.5 text-brand-400"></i> Dynamic Range Seek Bar</span>
+              <span id="temp-pct-label" class="font-mono text-brand-400 font-bold">56%</span>
+            </div>
+            
+            <!-- Seek Bar Track -->
+            <div class="seek-bar-track">
+              <!-- Gradient Fill -->
+              <div id="temp-seek-fill" class="seek-bar-fill bg-gradient-to-r from-emerald-500 via-teal-400 to-orange-400 w-[56%]"></div>
+              <!-- Interactive Thumb -->
+              <div id="temp-seek-thumb" class="seek-bar-thumb bg-emerald-400 left-[56%]"></div>
+            </div>
+
+            <!-- Scale Labels -->
+            <div class="flex justify-between text-[11px] text-slate-500 font-mono pt-1">
+              <span>0°C (Min)</span>
+              <span class="text-emerald-500">22-28°C (Comfort)</span>
+              <span>50°C (Max)</span>
+            </div>
+
+            <!-- 24h Statistics Strip -->
+            <div class="grid grid-cols-3 gap-2 mt-4 pt-3 border-t border-[#1c3427]/60 text-center">
+              <div class="bg-[#14221b] p-2 rounded-lg border border-[#1c3427]">
+                <span class="block text-[10px] uppercase text-slate-400">24h Low</span>
+                <span id="temp-stat-min" class="font-mono text-sm font-bold text-slate-200">--.- °C</span>
+              </div>
+              <div class="bg-[#14221b] p-2 rounded-lg border border-[#1c3427]">
+                <span class="block text-[10px] uppercase text-slate-400">24h Average</span>
+                <span id="temp-stat-avg" class="font-mono text-sm font-bold text-brand-400">--.- °C</span>
+              </div>
+              <div class="bg-[#14221b] p-2 rounded-lg border border-[#1c3427]">
+                <span class="block text-[10px] uppercase text-slate-400">24h High</span>
+                <span id="temp-stat-max" class="font-mono text-sm font-bold text-orange-400">--.- °C</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- HUMIDITY GAUGE & SEEK BAR CARD -->
+        <div class="glass-panel rounded-2xl p-6 relative overflow-hidden flex flex-col justify-between">
+          <div class="flex items-center justify-between mb-4">
+            <div class="flex items-center space-x-3">
+              <div class="w-9 h-9 rounded-lg bg-teal-950/60 border border-teal-500/30 flex items-center justify-center text-teal-400">
+                <i data-lucide="droplets" class="w-5 h-5"></i>
+              </div>
+              <div>
+                <h3 class="font-bold text-white text-base">Humidity</h3>
+                <span class="text-xs text-slate-400">DHT11 Sensor (Pin D3)</span>
+              </div>
+            </div>
+            <span id="hum-comfort-badge" class="px-2.5 py-1 rounded-full text-xs font-semibold bg-teal-950 text-teal-400 border border-teal-800">
+              Balanced
+            </span>
+          </div>
+
+          <!-- Gauge Circular Visualizer -->
+          <div class="flex flex-col items-center justify-center my-3 relative">
+            <svg class="w-48 h-48 gauge-svg" viewBox="0 0 120 120">
+              <!-- Background Ring -->
+              <circle 
+                class="gauge-circle-bg" 
+                cx="60" cy="60" r="50" 
+                stroke-width="10" 
+                stroke-dasharray="235.6 314.15" 
+                stroke-dashoffset="-39.27"
+              />
+              <!-- Progress Ring -->
+              <circle 
+                id="hum-gauge-circle" 
+                class="gauge-circle-progress" 
+                cx="60" cy="60" r="50" 
+                stroke="#14b8a6" 
+                stroke-width="10" 
+                stroke-dasharray="235.6 314.15" 
+                stroke-dashoffset="180"
+              />
+            </svg>
+
+            <!-- Digital Readout Center -->
+            <div class="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none mt-2">
+              <span id="hum-display-val" class="text-4xl sm:text-5xl font-black text-white font-mono tracking-tight">--.-</span>
+              <span class="text-sm font-semibold text-slate-400 mt-1">% Relative</span>
+            </div>
+          </div>
+
+          <!-- INNOVATIVE SEEK BAR STRUCTURE -->
+          <div class="mt-4 pt-4 border-t border-[#1c3427] space-y-2">
+            <div class="flex items-center justify-between text-xs text-slate-400">
+              <span class="flex items-center gap-1"><i data-lucide="sliders" class="w-3.5 h-3.5 text-teal-400"></i> Dynamic Range Seek Bar</span>
+              <span id="hum-pct-label" class="font-mono text-teal-400 font-bold">60%</span>
+            </div>
+            
+            <!-- Seek Bar Track -->
+            <div class="seek-bar-track">
+              <!-- Gradient Fill -->
+              <div id="hum-seek-fill" class="seek-bar-fill bg-gradient-to-r from-emerald-500 via-teal-400 to-cyan-400 w-[60%]"></div>
+              <!-- Interactive Thumb -->
+              <div id="hum-seek-thumb" class="seek-bar-thumb bg-teal-400 left-[60%]"></div>
+            </div>
+
+            <!-- Scale Labels -->
+            <div class="flex justify-between text-[11px] text-slate-500 font-mono pt-1">
+              <span>0% (Dry)</span>
+              <span class="text-teal-400">40-65% (Healthy)</span>
+              <span>100% (Saturated)</span>
+            </div>
+
+            <!-- 24h Statistics Strip -->
+            <div class="grid grid-cols-3 gap-2 mt-4 pt-3 border-t border-[#1c3427]/60 text-center">
+              <div class="bg-[#14221b] p-2 rounded-lg border border-[#1c3427]">
+                <span class="block text-[10px] uppercase text-slate-400">24h Low</span>
+                <span id="hum-stat-min" class="font-mono text-sm font-bold text-slate-200">--.- %</span>
+              </div>
+              <div class="bg-[#14221b] p-2 rounded-lg border border-[#1c3427]">
+                <span class="block text-[10px] uppercase text-slate-400">24h Average</span>
+                <span id="hum-stat-avg" class="font-mono text-sm font-bold text-teal-400">--.- %</span>
+              </div>
+              <div class="bg-[#14221b] p-2 rounded-lg border border-[#1c3427]">
+                <span class="block text-[10px] uppercase text-slate-400">24h High</span>
+                <span id="hum-stat-max" class="font-mono text-sm font-bold text-cyan-400">--.- %</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- HISTORICAL TREND CHARTS -->
+      <div class="glass-panel rounded-2xl p-6">
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 gap-2">
+          <div>
+            <h3 class="font-bold text-white text-base flex items-center gap-2">
+              <i data-lucide="line-chart" class="w-4 h-4 text-brand-400"></i>
+              <span>Live Sensor History Graph</span>
+            </h3>
+            <span class="text-xs text-slate-400">Chronological telemetry trends recorded every 10 seconds</span>
+          </div>
+          <div class="flex items-center space-x-3 text-xs">
+            <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span> Temp (°C)</span>
+            <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-teal-400"></span> Humidity (%)</span>
+          </div>
+        </div>
+        <div class="h-64 sm:h-72 w-full">
+          <canvas id="sensorChart"></canvas>
+        </div>
+      </div>
+
+      <!-- SECTION 2: SAVED RECORDS TABLE WITH PAGINATION & ASIA/KOLKATA TIMEZONE -->
+      <div class="glass-panel rounded-2xl p-6 overflow-hidden">
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+          <div>
+            <h3 class="text-lg font-bold text-white tracking-tight flex items-center gap-2">
+              <i data-lucide="database" class="w-4 h-4 text-brand-400"></i>
+              <span>Section 2: Saved Records Log</span>
+            </h3>
+            <p class="text-xs text-slate-400 mt-0.5">
+              Showing 20 records per page (latest first) • TimeZone: <strong class="text-brand-400 font-mono">+5:30 Asia/Kolkata</strong>
+            </p>
+          </div>
+          
+          <div class="flex items-center space-x-2 text-xs">
+            <span id="records-count-badge" class="px-3 py-1.5 rounded-lg bg-[#14221b] border border-[#1c3427] text-slate-300 font-mono">
+              Loading...
+            </span>
+          </div>
+        </div>
+
+        <!-- Responsive Records Table -->
+        <div class="overflow-x-auto rounded-xl border border-[#1c3427]">
+          <table class="w-full text-left border-collapse text-xs sm:text-sm">
+            <thead>
+              <tr class="bg-[#14221b] border-b border-[#1c3427] text-slate-300 uppercase tracking-wider text-[11px] font-semibold">
+                <th class="py-3 px-4 w-16 text-center">#</th>
+                <th class="py-3 px-4">Temperature</th>
+                <th class="py-3 px-4">Humidity</th>
+                <th class="py-3 px-4">Time (+05:30)</th>
+                <th class="py-3 px-4">Date</th>
+                <th class="py-3 px-4 text-center w-24">Action</th>
+              </tr>
+            </thead>
+            <tbody id="sensor-records-tbody" class="divide-y divide-[#1c3427] bg-[#0e1713]">
+              <tr>
+                <td colspan="6" class="py-8 text-center text-slate-400">
+                  <div class="inline-block animate-spin mr-2">⟳</div> Loading records...
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Pagination Controls -->
+        <div class="flex flex-col sm:flex-row items-center justify-between gap-4 mt-6 pt-4 border-t border-[#1c3427]">
+          <div id="pagination-info" class="text-xs text-slate-400 font-mono">
+            Showing records 1 - 20 of --
+          </div>
+
+          <div class="flex items-center space-x-2">
+            <button 
+              id="btn-prev-page" 
+              onclick="changePage(-1)" 
+              class="px-3.5 py-1.5 rounded-lg bg-[#14221b] border border-[#1c3427] hover:border-brand-500 text-xs font-semibold text-slate-300 hover:text-white transition disabled:opacity-40 disabled:cursor-not-allowed flex items-center space-x-1"
+            >
+              <i data-lucide="chevron-left" class="w-4 h-4"></i>
+              <span>Previous</span>
+            </button>
+
+            <span id="page-number-display" class="px-3 py-1.5 text-xs font-mono font-bold text-brand-400 bg-brand-950/60 rounded-lg border border-brand-800">
+              Page 1
+            </span>
+
+            <button 
+              id="btn-next-page" 
+              onclick="changePage(1)" 
+              class="px-3.5 py-1.5 rounded-lg bg-[#14221b] border border-[#1c3427] hover:border-brand-500 text-xs font-semibold text-slate-300 hover:text-white transition disabled:opacity-40 disabled:cursor-not-allowed flex items-center space-x-1"
+            >
+              <span>Next</span>
+              <i data-lucide="chevron-right" class="w-4 h-4"></i>
+            </button>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- ========================================== -->
+    <!-- TAB 2: SMART LCD                           -->
+    <!-- ========================================== -->
+    <div id="tab-lcd" class="hidden space-y-8">
+      
+      <div>
+        <h2 class="text-xl sm:text-2xl font-black text-white tracking-tight flex items-center gap-2">
+          <span>Smart LCD 16x2 I2C Display</span>
+          <span class="text-xs font-semibold px-2 py-0.5 rounded-md bg-brand-950 text-brand-400 border border-brand-800">Pins: D1(SCL), D2(SDA)</span>
+        </h2>
+        <p class="text-slate-400 text-xs sm:text-sm mt-0.5">Control and stream live text lines to the connected 1602 Character LCD</p>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        
+        <!-- Left: Input Form Controls -->
+        <div class="lg:col-span-6 glass-panel rounded-2xl p-6 sm:p-8 space-y-6">
+          <div class="flex items-center justify-between border-b border-[#1c3427] pb-4">
+            <h3 class="font-bold text-white text-base flex items-center gap-2">
+              <i data-lucide="edit-3" class="w-4 h-4 text-brand-400"></i>
+              <span>LCD Message Input</span>
+            </h3>
+            <span class="text-xs text-slate-400 font-mono">Max 16 chars per row</span>
+          </div>
+
+          <form onsubmit="handleLcdUpdate(event)" class="space-y-5">
+            <!-- Row 1 Input -->
+            <div>
+              <div class="flex justify-between items-center mb-1.5">
+                <label for="lcd-input-row1" class="text-xs font-semibold uppercase tracking-wider text-slate-300">
+                  Row 1: Line 1
+                </label>
+                <span id="char-count-row1" class="text-xs font-mono text-slate-400">0 / 16</span>
+              </div>
+              <div class="relative">
+                <i data-lucide="align-left" class="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2"></i>
+                <input 
+                  type="text" 
+                  id="lcd-input-row1" 
+                  maxlength="16" 
+                  placeholder="Enter Row 1 text..." 
+                  value="Welcome to sky"
+                  oninput="updateLcdPreview()"
+                  class="w-full bg-[#14221b] border border-[#1c3427] focus:border-brand-500 focus:ring-1 focus:ring-brand-500 rounded-xl pl-10 pr-4 py-3 text-sm text-white font-mono placeholder-slate-500 transition outline-none"
+                >
+              </div>
+            </div>
+
+            <!-- Row 2 Input -->
+            <div>
+              <div class="flex justify-between items-center mb-1.5">
+                <label for="lcd-input-row2" class="text-xs font-semibold uppercase tracking-wider text-slate-300">
+                  Row 2: Line 2
+                </label>
+                <span id="char-count-row2" class="text-xs font-mono text-slate-400">0 / 16</span>
+              </div>
+              <div class="relative">
+                <i data-lucide="align-left" class="w-4 h-4 text-slate-500 absolute left-3.5 top-1/2 -translate-y-1/2"></i>
+                <input 
+                  type="text" 
+                  id="lcd-input-row2" 
+                  maxlength="16" 
+                  placeholder="Enter Row 2 text..." 
+                  value="IoT System Ready"
+                  oninput="updateLcdPreview()"
+                  class="w-full bg-[#14221b] border border-[#1c3427] focus:border-brand-500 focus:ring-1 focus:ring-brand-500 rounded-xl pl-10 pr-4 py-3 text-sm text-white font-mono placeholder-slate-500 transition outline-none"
+                >
+              </div>
+            </div>
+
+            <!-- Quick Preset Badges -->
+            <div class="pt-2">
+              <span class="block text-xs text-slate-400 mb-2 font-medium">Quick Template Presets:</span>
+              <div class="flex flex-wrap gap-2 text-xs">
+                <button type="button" onclick="setLcdPreset('Welcome to sky', 'Dept. of EE')" class="px-2.5 py-1 rounded-md bg-[#14221b] border border-[#1c3427] hover:border-brand-500 text-slate-300 hover:text-white transition">
+                  Sky Welcome
+                </button>
+                <button type="button" onclick="setLcdPreset('Gov Engg College', 'Yavatmal Dept EE')" class="px-2.5 py-1 rounded-md bg-[#14221b] border border-[#1c3427] hover:border-brand-500 text-slate-300 hover:text-white transition">
+                  Gov Engg Yavatmal
+                </button>
+                <button type="button" onclick="setLcdPreset('Temp: 28.5 C', 'Hum: 62% [OK]')" class="px-2.5 py-1 rounded-md bg-[#14221b] border border-[#1c3427] hover:border-brand-500 text-slate-300 hover:text-white transition">
+                  Sensor Reading
+                </button>
+                <button type="button" onclick="setLcdPreset('LED Status: ON', 'Auto-System 24/7')" class="px-2.5 py-1 rounded-md bg-[#14221b] border border-[#1c3427] hover:border-brand-500 text-slate-300 hover:text-white transition">
+                  LED State
+                </button>
+              </div>
+            </div>
+
+            <!-- Submit Button (Requested: "Update Button Upon Update display enetered data on LCD") -->
+            <button 
+              type="submit" 
+              id="btn-lcd-update" 
+              class="w-full py-3.5 px-4 bg-brand-500 hover:bg-brand-400 text-black font-extrabold text-sm rounded-xl transition duration-200 shadow-lg shadow-brand-500/25 flex items-center justify-center space-x-2"
+            >
+              <i data-lucide="send" class="w-4 h-4"></i>
+              <span>Update LCD Display</span>
+            </button>
+          </form>
+        </div>
+
+        <!-- Right: Authentic 16x2 LCD Simulation Visualizer -->
+        <div class="lg:col-span-6 glass-panel rounded-2xl p-6 sm:p-8 space-y-6">
+          <div class="flex items-center justify-between border-b border-[#1c3427] pb-4">
+            <h3 class="font-bold text-white text-base flex items-center gap-2">
+              <i data-lucide="eye" class="w-4 h-4 text-brand-400"></i>
+              <span>Hardware LCD Simulation</span>
+            </h3>
+            <span class="text-xs text-brand-400 font-mono">1602 HD44780 I2C</span>
+          </div>
+
+          <!-- LCD Hardware Box Container -->
+          <div class="lcd-container p-6 sm:p-8">
+            <!-- Screen Bezel -->
+            <div id="lcd-screen-element" class="lcd-screen p-5 rounded-md">
+              <!-- Row 1 (16 chars) -->
+              <div id="lcd-preview-row1" class="lcd-line">Welcome to sky  </div>
+              <!-- Row 2 (16 chars) -->
+              <div id="lcd-preview-row2" class="lcd-line">IoT System Ready</div>
+            </div>
+            
+            <!-- Pin labels below the screen -->
+            <div class="flex items-center justify-between text-[10px] text-slate-600 font-mono mt-3 px-2">
+              <span>GND • VCC • SDA(D2) • SCL(D1)</span>
+              <span>I2C ADDR: 0x27</span>
+            </div>
+          </div>
+
+          <!-- LCD Status & Details -->
+          <div class="bg-[#14221b] p-4 rounded-xl border border-[#1c3427] space-y-2 text-xs">
+            <div class="flex justify-between items-center text-slate-300">
+              <span class="text-slate-400">Sync Status:</span>
+              <span id="lcd-sync-status" class="text-brand-400 font-semibold flex items-center gap-1">
+                <i data-lucide="check" class="w-3.5 h-3.5"></i> Synced with Database
+              </span>
+            </div>
+            <div class="flex justify-between items-center text-slate-300">
+              <span class="text-slate-400">Last LCD Update:</span>
+              <span id="lcd-last-updated" class="font-mono text-slate-200">--:--:--</span>
+            </div>
+            <p class="text-[11px] text-slate-500 pt-1 border-t border-[#1c3427]/60">
+              * The ESP8266 pulls this message during its 10s telemetry heartbeat and renders it instantly on the physical 16x2 LCD.
+            </p>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+    <!-- ========================================== -->
+    <!-- TAB 3: LED AUTOMATION                      -->
+    <!-- ========================================== -->
+    <div id="tab-led" class="hidden space-y-8">
+      
+      <div>
+        <h2 class="text-xl sm:text-2xl font-black text-white tracking-tight flex items-center gap-2">
+          <span>LED Automation Control</span>
+          <span class="text-xs font-semibold px-2 py-0.5 rounded-md bg-brand-950 text-brand-400 border border-brand-800">Pin: D0 (GPIO 16)</span>
+        </h2>
+        <p class="text-slate-400 text-xs sm:text-sm mt-0.5">Remotely switch and automate the connected hardware LED on Pin D0</p>
+      </div>
+
+      <div class="max-w-3xl mx-auto glass-panel rounded-3xl p-8 sm:p-12 text-center relative overflow-hidden">
+        
+        <!-- Top Green Accent Glow -->
+        <div class="absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r from-emerald-600 via-brand-400 to-teal-400"></div>
+
+        <!-- Glowing LED Hardware Simulation Diode -->
+        <div class="flex flex-col items-center justify-center my-6">
+          <div id="led-diode-element" class="led-diode led-off">
+            <i data-lucide="zap" id="led-diode-icon" class="w-8 h-8 text-slate-500 transition-all"></i>
+          </div>
+          
+          <div class="mt-5">
+            <span id="led-status-pill" class="px-4 py-1.5 rounded-full text-xs font-bold uppercase tracking-wider bg-slate-800 text-slate-400 border border-slate-700">
+              LED State: OFF
+            </span>
+          </div>
+        </div>
+
+        <!-- Main Toggle Switch Button (Requested: "Create Button when Toggled turn LED ON else OFF") -->
+        <div class="my-8 flex justify-center">
+          <button 
+            id="btn-led-toggle" 
+            onclick="toggleLed()" 
+            class="group relative inline-flex items-center justify-center px-10 py-5 text-lg font-black tracking-wide rounded-2xl transition-all duration-300 shadow-2xl bg-[#14221b] border-2 border-slate-700 text-slate-300 hover:border-brand-500 hover:text-white"
+          >
+            <div class="flex items-center space-x-3">
+              <i data-lucide="power" class="w-7 h-7 text-slate-400 group-hover:text-brand-400 transition"></i>
+              <span id="btn-led-text">TURN LED ON</span>
+            </div>
+          </button>
+        </div>
+
+        <!-- Hardware Pin & Controller Information -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-6 border-t border-[#1c3427] text-left text-xs">
+          <div class="bg-[#14221b] p-3.5 rounded-xl border border-[#1c3427]">
+            <span class="block text-slate-400 text-[10px] uppercase font-semibold">Microcontroller Pin</span>
+            <span class="text-white font-mono font-bold text-sm">Pin D0 / GPIO 16</span>
+          </div>
+
+          <div class="bg-[#14221b] p-3.5 rounded-xl border border-[#1c3427]">
+            <span class="block text-slate-400 text-[10px] uppercase font-semibold">Logic Level</span>
+            <span id="led-logic-level" class="text-slate-300 font-mono font-bold text-sm">LOW (0V)</span>
+          </div>
+
+          <div class="bg-[#14221b] p-3.5 rounded-xl border border-[#1c3427]">
+            <span class="block text-slate-400 text-[10px] uppercase font-semibold">Last Switched</span>
+            <span id="led-last-switched" class="text-slate-300 font-mono font-bold text-sm">--:--:--</span>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+
+  </main>
+
+  <!-- TOAST NOTIFICATION CONTAINER -->
+  <div id="toast-container" class="fixed bottom-16 right-6 z-50 flex flex-col space-y-2 pointer-events-none"></div>
+
+  <!-- FOOTER (Strictly matches User Prompt) -->
+  <footer class="border-t border-[#1c3427] bg-[#0e1713]/90 py-5 px-6 text-center text-xs sm:text-sm text-slate-400 mt-10">
+    <div class="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-3">
+      <div class="flex items-center space-x-2">
+        <span class="w-2.5 h-2.5 rounded-full bg-brand-400 animate-pulse"></span>
+        <span class="font-bold text-white tracking-wide">sky</span>
+        <span class="text-slate-500">•</span>
+        <span class="text-slate-400">Node.js + SQLite IoT Cloud</span>
+      </div>
+      <p class="text-slate-400 text-xs sm:text-sm text-center font-normal">
+        Designed and Developed by Rohit nand Vijay, Dept. of Electrical Engineering, Gov. Engg............
+      </p>
+    </div>
+  </footer>
+
+  <!-- Scripts -->
+  <script src="/js/auth.js"></script>
+  <script src="/js/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,203 @@
+/* Custom Styles for sky IoT Application */
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Share+Tech+Mono&display=swap');
+
+:root {
+  --primary-emerald: #10b981;
+  --primary-emerald-dark: #047857;
+  --primary-emerald-glow: rgba(16, 185, 129, 0.4);
+  --bg-dark: #070d0a;
+  --card-dark: #0e1713;
+  --border-dark: #1b2e25;
+}
+
+body {
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  background-color: var(--bg-dark);
+  color: #e2e8f0;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #0b1410;
+}
+::-webkit-scrollbar-thumb {
+  background: #1b382b;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #10b981;
+}
+
+/* Glassmorphism Cards */
+.glass-panel {
+  background: rgba(14, 23, 19, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(34, 197, 94, 0.15);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.45);
+}
+
+.glass-panel-glow {
+  box-shadow: 0 0 25px rgba(16, 185, 129, 0.15), 0 8px 32px 0 rgba(0, 0, 0, 0.45);
+}
+
+/* Gauge Arc Animations */
+.gauge-svg {
+  transform: rotate(-90deg);
+}
+
+.gauge-circle-bg {
+  stroke: rgba(255, 255, 255, 0.08);
+  fill: none;
+}
+
+.gauge-circle-progress {
+  fill: none;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 0.8s cubic-bezier(0.4, 0, 0.2, 1), stroke 0.5s ease;
+}
+
+/* Seek Bar Track & Indicator */
+.seek-bar-track {
+  position: relative;
+  height: 10px;
+  background: #15241c;
+  border-radius: 9999px;
+  overflow: visible;
+}
+
+.seek-bar-fill {
+  height: 100%;
+  border-radius: 9999px;
+  transition: width 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.seek-bar-thumb {
+  position: absolute;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid #ffffff;
+  box-shadow: 0 0 10px rgba(16, 185, 129, 0.8);
+  transition: left 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Authentic 16x2 LCD Simulation */
+.lcd-container {
+  background: #041009;
+  border: 12px solid #111a15;
+  border-radius: 8px;
+  box-shadow: inset 0 0 15px rgba(0, 0, 0, 0.8), 0 10px 25px rgba(0, 0, 0, 0.5);
+  position: relative;
+}
+
+.lcd-screen {
+  background-color: #123524; /* Green LCD Backlight */
+  color: #3ef89c; /* Green LCD text */
+  font-family: 'Share Tech Mono', monospace;
+  letter-spacing: 2px;
+  text-shadow: 0 0 8px rgba(62, 248, 156, 0.7);
+  box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.6);
+  user-select: none;
+}
+
+.lcd-screen.blue-mode {
+  background-color: #0b2247;
+  color: #4dc2ff;
+  text-shadow: 0 0 8px rgba(77, 194, 255, 0.7);
+}
+
+.lcd-line {
+  height: 34px;
+  line-height: 34px;
+  white-space: pre;
+  font-size: 1.25rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+}
+
+/* LED Diode Glow Simulation */
+.led-diode {
+  width: 90px;
+  height: 90px;
+  border-radius: 50%;
+  transition: all 0.4s ease;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.led-diode.led-on {
+  background: radial-gradient(circle at 35% 35%, #a7f3d0 0%, #10b981 40%, #047857 75%, #022c22 100%);
+  box-shadow: 
+    0 0 25px #10b981,
+    0 0 50px rgba(16, 185, 129, 0.8),
+    0 0 80px rgba(16, 185, 129, 0.5),
+    inset 0 0 15px rgba(255, 255, 255, 0.8);
+  animation: pulse-glow 2s infinite alternate;
+}
+
+.led-diode.led-off {
+  background: radial-gradient(circle at 35% 35%, #374151 0%, #1f2937 50%, #111827 100%);
+  box-shadow: 
+    0 4px 10px rgba(0, 0, 0, 0.6),
+    inset 0 2px 4px rgba(255, 255, 255, 0.1);
+}
+
+@keyframes pulse-glow {
+  0% {
+    box-shadow: 
+      0 0 25px #10b981,
+      0 0 45px rgba(16, 185, 129, 0.8),
+      0 0 70px rgba(16, 185, 129, 0.4),
+      inset 0 0 15px rgba(255, 255, 255, 0.8);
+  }
+  100% {
+    box-shadow: 
+      0 0 35px #34d399,
+      0 0 65px rgba(52, 211, 153, 0.9),
+      0 0 100px rgba(16, 185, 129, 0.6),
+      inset 0 0 20px rgba(255, 255, 255, 1);
+  }
+}
+
+/* Pulsing radar dot for status */
+.radar-dot {
+  position: relative;
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+}
+.radar-dot::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: inherit;
+  border-radius: 50%;
+  animation: radar-ping 1.5s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+@keyframes radar-ping {
+  75%, 100% {
+    transform: scale(2.5);
+    opacity: 0;
+  }
+}
+
+/* Tab button active state */
+.tab-btn.active {
+  background-color: #064e3b;
+  color: #34d399;
+  border-color: #10b981;
+  box-shadow: 0 0 15px rgba(16, 185, 129, 0.25);
+}

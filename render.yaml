@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: sky-iot-app
+    env: node
+    plan: free
+    region: oregon
+    buildCommand: npm install
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: JWT_SECRET
+        generateValue: true
+      - key: DATABASE_PATH
+        value: ./data/sky.db

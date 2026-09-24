@@ -1,0 +1,34 @@
+{
+  "name": "sky-iot-system",
+  "version": "1.0.0",
+  "description": "sky - IoT Environment Monitoring and Smart Automation System",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "seed": "node database/seed.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "keywords": [
+    "iot",
+    "esp8266",
+    "dht11",
+    "lcd1602",
+    "render",
+    "sqlite",
+    "express",
+    "tailwind"
+  ],
+  "author": "Rohit and Vijay, Dept. of Electrical Engineering, Gov. Engg",
+  "license": "MIT",
+  "dependencies": {
+    "bcryptjs": "^3.0.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "jsonwebtoken": "^9.0.2",
+    "sqlite3": "^5.1.7"
+  }
+}
